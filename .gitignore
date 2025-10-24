@@ -81,3 +81,4 @@ PyNifly.code-workspace
 
 build/
 /NiflyDLL/external/
+PyNifly/NiflyDLL.dylib

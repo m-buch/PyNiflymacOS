@@ -120,6 +120,8 @@ def extend_filenames(root, separator, files=None):
         return str(sharedpart)
     
 
+from pathlib import Path, PureWindowsPath
+
 def find_referenced_file(filepath:str, nifpath:str, root='textures', alt_suffix=None, alt_path=None) -> str:
     """
     Look for a texture file with either a PNG or DDS extension.
@@ -128,7 +130,7 @@ def find_referenced_file(filepath:str, nifpath:str, root='textures', alt_suffix=
     Look for both the dds and png extension.
     Return the path if found, else None.
     """
-    fp = Path(filepath.lower())
+    fp = Path(*PureWindowsPath(filepath).parts)
 
     # If relative, must start with "textures"
     if (not fp.is_absolute()) and fp.parts[0] != root:

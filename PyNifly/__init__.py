@@ -46,7 +46,10 @@ else:
     py_addon_path = os.path.dirname(os.path.realpath(__file__))
     if py_addon_path not in sys.path:
         sys.path.append(py_addon_path)
-    nifly_path = os.path.join(py_addon_path, "NiflyDLL.dll")
+    if sys.platform == "win32":
+        nifly_path = os.path.join(py_addon_path, "NiflyDLL.dll")
+    else:
+        nifly_path = os.path.join(py_addon_path, "NiflyDLL.dylib")
     hkxcmd_path = os.path.join(py_addon_path, "hkxcmd.exe")
     asset_path = os.path.join(py_addon_path, "blender_assets")
 

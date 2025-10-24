@@ -12,11 +12,15 @@ import re
 from nifdefs import *
 from pynifly import *
 
-import ctypes
-from ctypes import wintypes
-_GetShortPathNameW = ctypes.windll.kernel32.GetShortPathNameW
-_GetShortPathNameW.argtypes = [wintypes.LPWSTR, wintypes.LPWSTR, wintypes.DWORD]
-_GetShortPathNameW.restype = wintypes.DWORD
+if sys.platform == "win32":
+    import ctypes
+    from ctypes import wintypes
+
+    _GetShortPathNameW = ctypes.windll.kernel32.GetShortPathNameW
+    _GetShortPathNameW.argtypes = [wintypes.LPWSTR, wintypes.LPWSTR, wintypes.DWORD]
+    _GetShortPathNameW.restype  = wintypes.DWORD
+else:
+    _GetShortPathNameW = None
 
 NO_PARTITION_GROUP = "*NO_PARTITIONS*"
 MULTIPLE_PARTITION_GROUP = "*MULTIPLE_PARTITIONS*"
@@ -420,15 +424,22 @@ def get_short_path_name(long_name):
     """
     pname = os.path.dirname(long_name)
     bname = os.path.basename(long_name).replace(' ', '_')
-    output_buf_size = len(long_name)
+
+    if _GetShortPathNameW is None:
+        return os.path.join(pname, bname)
+    output_buf_size = max(len(pname) + 1, 128)
     while True:
-        output_buf = ctypes.create_unicode_buffer(output_buf_size)
-        needed = _GetShortPathNameW(pname, output_buf, output_buf_size)
-        if output_buf_size >= needed:
+        outbuf = ctypes.create_unicode_buffer(output_buf_size)
+        needed = _GetShortPathNameW(pname, outbuf, output_buf_size)
+        if needed == 0:
+            short_dir = pname
             break
-        else:
-            output_buf_size = needed
-    return os.path.join(output_buf.value, bname)
+        if needed <= output_buf_size:
+            short_dir = outbuf.value
+            break
+        output_buf_size = needed
+
+    return os.path.join(short_dir, bname)
 
 
 CAMERA_NEUTRAL = MatrixLocRotScale((0, 100, 0), Euler((-pi/2,pi,0), 'XYZ'), (1,1,1))
