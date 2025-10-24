@@ -6,10 +6,14 @@
 #include "animation.hpp"
 #include "niflydefs.hpp"
 
-#ifdef NIFLYDLL_EXPORTS
-	#define NIFLY_API __declspec(dllexport)
+#if defined(_WIN32)
+#  ifdef NIFLYDLL_EXPORTS
+#    define NIFLY_API __declspec(dllexport)
+#  else
+#    define NIFLY_API __declspec(dllimport)
+#  endif
 #else
-	#define NIFLY_API __declspec(dllimport)
+#  define NIFLY_API __attribute__((visibility("default")))
 #endif
 
 extern "C" NIFLY_API const int* getVersion();

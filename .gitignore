@@ -78,3 +78,6 @@ ipch/
 /PyNifly/tests/FO4/Test0Weights.blend1
 PyNifly.code-workspace
 /NiflyDLL/NiflyDLL/Test/NiflyDLL.tlog
+
+build/
+/NiflyDLL/external/

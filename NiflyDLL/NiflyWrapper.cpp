@@ -18,10 +18,26 @@
 #include "bhk.hpp"
 #include "NiflyFunctions.hpp"
 #include "NiflyWrapper.hpp"
+#include "Logger.hpp"
+#include <cstring>
+#include <algorithm>
 
 const int NiflyDDLVersion[3] = { 20, 6, 0 };
  
 using namespace nifly; 
+
+#ifndef _WIN32
+inline errno_t strncpy_s(char* dest, size_t destsz, const char* src, size_t count)
+{
+    if (!dest || !src) return EINVAL;
+    if (destsz == 0) return ERANGE;
+
+    size_t copylen = std::min(count, destsz - 1);
+    std::strncpy(dest, src, copylen);
+    dest[copylen] = '\0';
+    return 0;
+}
+#endif
 
 /* ************************** UTILITY ************************** */
 
@@ -2345,9 +2361,9 @@ int getConnectPointParent(void* nifref, int index, ConnectPointBuf* buf) {
         if (cpl) {
             for (auto& cp : cpl->connectPoints) {
                 if (c == index) {
-                    strncpy_s(buf->parent, cp.root.get().c_str(), 256);
+                    std::strncpy(buf->parent, cp.root.get().c_str(), 256);
                     buf->parent[255] = '\0';
-                    strncpy_s(buf->name, cp.variableName.get().c_str(), 256);
+                    std::strncpy(buf->name, cp.variableName.get().c_str(), 256);
                     buf->name[255] = '\0';
                     assignQ(buf->rotation, cp.rotation);
                     for (int i = 0; i < 3; i++) buf->translation[i] = cp.translation[i];

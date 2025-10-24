@@ -6,7 +6,7 @@
 	TODO: Split out the Anim* stuff from OS into files that better match the OS files
 	for easier sync.
 	*/
-#include "pch.h" 
+#include "pch.h"
 #include "object3d.hpp"
 #include "geometry.hpp"
 #include "NifFile.hpp"
@@ -14,6 +14,13 @@
 #include "Anim.h"
 #include "NiflyDefs.hpp"
 #include "NiflyFunctions.hpp"
+#include "Logger.hpp"
+
+#include <filesystem>
+
+#if !defined(_WIN32)
+#include <dlfcn.h>
+#endif
 
 using namespace nifly;
 
@@ -27,24 +34,37 @@ static String curGameDataPath; // Get this from OS if it turns out we need it
 std::string curRootName;
 
 void FindProjectRoot() {
-	char path[MAX_PATH] = { 0 };
-	HMODULE hm = NULL;
+        if (!projectRoot.empty()) {
+                return;
+        }
 
-	if (!projectRoot.empty()) return;
+#if defined(_WIN32)
+        char path[MAX_PATH] = { 0 };
+        HMODULE hm = NULL;
 
-	if (GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
-			GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
-			(LPCSTR) & SkeletonFile, &hm) == 0) {
-		//int ret = GetLastError();
-		niflydll::LogWrite("Failed to get a handle to the DLL module");
-	}
-	if (GetModuleFileNameA(hm, (LPSTR)path, sizeof(path)) == 0)
-	{
-		//int ret = GetLastError();
-		niflydll::LogWrite("Failed to get the filename of the DLL");
-	}
-	
-	projectRoot = std::filesystem::path(path).parent_path();
+        if (GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+                        GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                        (LPCSTR)&SkeletonFile, &hm) == 0) {
+                niflydll::LogWrite("Failed to get a handle to the DLL module");
+                projectRoot = std::filesystem::current_path();
+                return;
+        }
+        if (GetModuleFileNameA(hm, (LPSTR)path, static_cast<DWORD>(sizeof(path))) == 0) {
+                niflydll::LogWrite("Failed to get the filename of the DLL");
+                projectRoot = std::filesystem::current_path();
+                return;
+        }
+
+        projectRoot = std::filesystem::path(path).parent_path();
+#else
+        Dl_info info{};
+        if (dladdr(reinterpret_cast<void*>(&FindProjectRoot), &info) && info.dli_fname) {
+                projectRoot = std::filesystem::path(info.dli_fname).parent_path();
+        } else {
+                projectRoot = std::filesystem::current_path();
+                niflydll::LogWrite("Unable to determine module path; defaulting project root to current directory");
+        }
+#endif
 }
 
 String SkeletonFile(enum TargetGame game, String& rootName) {
